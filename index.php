@@ -6,7 +6,7 @@ if (!isset($_SESSION['user_id'])) {
 }
 require_once 'db.php';
 
-// Fetch Store Name
+// Fetch Store Name & Refresh Rate
 $setting = $conn->query("SELECT store_name, auto_refresh_sec FROM settings WHERE id = 1")->fetch_assoc();
 $store_name = $setting['store_name'] ?? 'One Kitchen Hub';
 $refresh_rate = ($setting['auto_refresh_sec'] ?? 3) * 1000;
@@ -25,10 +25,12 @@ $refresh_rate = ($setting['auto_refresh_sec'] ?? 3) * 1000;
         .nav-links a:hover { color: #fff; }
         .container { padding: 20px; }
         .orders-grid { display: flex; flex-wrap: wrap; gap: 15px; }
-        .card { background: #fff; border-radius: 8px; border-top: 5px solid #00b14f; box-shadow: 0 2px 5px rgba(0,0,0,0.1); width: 280px; padding: 15px; }
-        .badge { background: #e0f2fe; color: #0369a1; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
-        .order-id { font-size: 20px; font-weight: bold; margin: 10px 0; }
+        .card { background: #fff; border-radius: 8px; border-top: 5px solid #00b14f; box-shadow: 0 2px 5px rgba(0,0,0,0.1); width: 280px; padding: 15px; display: flex; flex-direction: column; justify-content: space-between; }
+        .badge { background: #e0f2fe; color: #0369a1; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; display: inline-block; }
+        .order-id { font-size: 20px; font-weight: bold; margin: 10px 0 5px 0; }
         .detail { margin: 5px 0; font-size: 14px; }
+        .btn-complete { margin-top: 15px; background: #00b14f; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; transition: background 0.2s; }
+        .btn-complete:hover { background: #008f40; }
     </style>
 </head>
 <body>
@@ -51,7 +53,7 @@ $refresh_rate = ($setting['auto_refresh_sec'] ?? 3) * 1000;
                 .then(response => response.json())
                 .then(data => {
                     const container = document.getElementById('orders-container');
-                    if (data.length === 0) {
+                    if (!data || data.length === 0) {
                         container.innerHTML = '<p>No live orders right now.</p>';
                         return;
                     }
@@ -60,17 +62,37 @@ $refresh_rate = ($setting['auto_refresh_sec'] ?? 3) * 1000;
                     data.forEach(order => {
                         html += `
                             <div class="card">
-                                <span class="badge">${order.source || 'UBER_EATS'}</span>
-                                <div class="order-id">#${order.order_id}</div>
-                                <div class="detail"><strong>Customer:</strong> ${order.customer_name}</div>
-                                <div class="detail"><strong>Items:</strong> ${order.items}</div>
-                                <div class="detail"><strong>Total:</strong> $${parseFloat(order.total).toFixed(2)}</div>
+                                <div>
+                                    <span class="badge">${order.source || 'UBER_EATS'}</span>
+                                    <div class="order-id">#${order.order_id}</div>
+                                    <div class="detail"><strong>Customer:</strong> ${order.customer_name}</div>
+                                    <div class="detail"><strong>Items:</strong> ${order.items}</div>
+                                    <div class="detail"><strong>Total:</strong> $${parseFloat(order.total).toFixed(2)}</div>
+                                </div>
+                                <button class="btn-complete" onclick="completeOrder(${order.id})">✓ Complete Order</button>
                             </div>
                         `;
                     });
                     container.innerHTML = html;
                 })
                 .catch(err => console.error('Error fetching orders:', err));
+        }
+
+        function completeOrder(id) {
+            fetch('complete_order.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: id })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    loadOrders();
+                } else {
+                    alert('Could not complete order: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(err => console.error('Error completing order:', err));
         }
 
         loadOrders();
