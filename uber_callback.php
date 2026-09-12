@@ -1,62 +1,42 @@
 <?php
-session_start();
-require_once 'db.php';
-
-// Check if Uber returned an error
-if (isset($_GET['error'])) {
-    die("Authorization failed: " . htmlspecialchars($_GET['error_description'] ?? $_GET['error']));
-}
-
-// Check if authorization code is present
+// Check if Uber returned an authorization code
 if (!isset($_GET['code'])) {
-    die("Authorization failed: No code provided by Uber.");
+    die("Authorization failed or code missing.");
 }
 
-$code = $_GET['code'];
+$authorization_code = $_GET['code'];
+$client_id = 'hIQlHFPRSnXiekxqOfiAP7rz4aZTJrTI';
+$client_secret = 'IpA44FdRXYOiGRlExoQ_ENTZGQkad2llO3bfxFC1';
+$redirect_uri = 'https://onekitchensolution.onrender.com/uber_callback.php';
 
-// Fetch settings from database
-$setting_res = $conn->query("SELECT * FROM settings WHERE id = 1");
-$setting = $setting_res ? $setting_res->fetch_assoc() : [];
-
-$client_id = $setting['uber_client_id'] ?? '';
-$client_secret = $setting['uber_client_secret'] ?? '';
-$redirect_uri = "https://onekitchensolution.onrender.com/uber_callback.php";
-
-// Exchange code for token
-$token_url = "https://auth.uber.com/oauth/v2/token";
-$post_fields = [
+// Exchange authorization code for access token
+$ch = curl_init('https://sandbox-login.uber.com/oauth/v2/token');
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query([
     'client_id' => $client_id,
     'client_secret' => $client_secret,
     'grant_type' => 'authorization_code',
-    'code' => $code,
-    'redirect_uri' => $redirect_uri
-];
+    'redirect_uri' => $redirect_uri,
+    'code' => $authorization_code
+]));
 
-$ch = curl_init($token_url);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_POST, true);
-curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($post_fields));
 $response = curl_exec($ch);
 $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 curl_close($ch);
 
-$data = json_decode($response, true);
+if ($http_code !== 200) {
+    die("Token Exchange Failed (HTTP {$http_code}): <pre>" . htmlspecialchars($response) . "</pre>");
+}
 
-if ($http_code === 200 && isset($data['access_token'])) {
-    $access_token = $data['access_token'];
-    $refresh_token = $data['refresh_token'] ?? '';
-    
-    // Save tokens to database
-    $stmt = $conn->prepare("UPDATE settings SET uber_access_token = ?, uber_refresh_token = ? WHERE id = 1");
-    $stmt->bind_param("ss", $access_token, $refresh_token);
-    $stmt->execute();
-    $stmt->close();
-    
-    echo "<h2>Success! Uber account connected successfully.</h2>";
-    echo "<p>Tokens have been saved securely to TiDB Cloud.</p>";
-    echo "<a href='settings.php'>Back to Settings</a>";
+$data = json_decode($response, true);
+$access_token = $data['access_token'] ?? null;
+
+if ($access_token) {
+    echo "<h2>Success! Access Token Acquired:</h2>";
+    echo "<p><code>" . htmlspecialchars($access_token) . "</code></p>";
+    // TODO: Save this $access_token securely into your TiDB database!
 } else {
-    echo "<h2>Token Exchange Failed (HTTP $http_code)</h2>";
-    echo "<pre>" . htmlspecialchars($response) . "</pre>";
+    echo "Failed to parse access token from response: <pre>" . htmlspecialchars($response) . "</pre>";
 }
 ?>
