@@ -1,8 +1,9 @@
 <?php
 $client_id = 'hIQlHFPRSnXiekxqOfiAP7rz4aZTJrTI';
-$redirect_uri = 'https://onekitchensolution.onrender.com/uber_callback.php'; // Update with your actual callback path if different
+$redirect_uri = 'https://onekitchensolution.onrender.com/uber_callback.php';
 
-$auth_url = "https://login.uber.com/oauth/v2/authorize?" . http_build_query([
+// Notice the sandbox domain here:
+$auth_url = "https://sandbox-login.uber.com/oauth/v2/authorize?" . http_build_query([
     'client_id' => $client_id,
     'response_type' => 'code',
     'redirect_uri' => $redirect_uri,
@@ -10,6 +11,6 @@ $auth_url = "https://login.uber.com/oauth/v2/authorize?" . http_build_query([
 ]);
 
 echo "<h2>Kitchen Display System - Authorization</h2>";
-echo "<p>Click the button below to sign in with Uber and link your restaurant store:</p>";
-echo "<a href='" . $auth_url . "' style='padding: 10px 20px; background: black; color: white; text-decoration: none; border-radius: 5px;'>Sign in with Uber</a>";
+echo "<p>Click the button below to sign in with Uber Sandbox and link your restaurant store:</p>";
+echo "<a href='" . $auth_url . "' style='padding: 10px 20px; background: black; color: white; text-decoration: none; border-radius: 5px;'>Sign in with Uber Sandbox</a>";
 ?>
