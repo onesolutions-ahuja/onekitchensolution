@@ -12,16 +12,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $store_name = trim($_POST['store_name']);
     $refresh_sec = (int)$_POST['auto_refresh_sec'];
 
-    // Vendor Toggles
+    // Uber Eats
     $uber_enabled = isset($_POST['uber_enabled']) ? 1 : 0;
     $uber_client_id = trim($_POST['uber_client_id']);
     $uber_client_secret = trim($_POST['uber_client_secret']);
 
-    $doordash_enabled = isset($_POST['doordash_enabled']) ? 1 : 0;
-    $doordash_developer_id = trim($_POST['doordash_developer_id']);
-    $doordash_key_id = trim($_POST['doordash_key_id']);
-    $doordash_signing_secret = trim($_POST['doordash_signing_secret']);
+    // Just Eat
+    $justeat_enabled = isset($_POST['justeat_enabled']) ? 1 : 0;
+    $justeat_restaurant_id = trim($_POST['justeat_restaurant_id']);
+    $justeat_api_key = trim($_POST['justeat_api_key']);
 
+    // Deliveroo
     $deliveroo_enabled = isset($_POST['deliveroo_enabled']) ? 1 : 0;
     $deliveroo_brand_id = trim($_POST['deliveroo_brand_id']);
     $deliveroo_api_key = trim($_POST['deliveroo_api_key']);
@@ -30,19 +31,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         store_name = ?, 
         auto_refresh_sec = ?, 
         uber_enabled = ?, uber_client_id = ?, uber_client_secret = ?,
-        doordash_enabled = ?, doordash_developer_id = ?, doordash_key_id = ?, doordash_signing_secret = ?,
+        justeat_enabled = ?, justeat_restaurant_id = ?, justeat_api_key = ?,
         deliveroo_enabled = ?, deliveroo_brand_id = ?, deliveroo_api_key = ?
         WHERE id = 1");
 
-    $stmt->bind_param("siiisisissis", 
+    $stmt->bind_param("siiisissis", 
         $store_name, $refresh_sec,
         $uber_enabled, $uber_client_id, $uber_client_secret,
-        $doordash_enabled, $doordash_developer_id, $doordash_key_id, $doordash_signing_secret,
+        $justeat_enabled, $justeat_restaurant_id, $justeat_api_key,
         $deliveroo_enabled, $deliveroo_brand_id, $deliveroo_api_key
     );
 
     if ($stmt->execute()) {
-        $msg = "Multi-vendor settings updated successfully!";
+        $msg = "Settings updated successfully for UK vendors!";
     } else {
         $msg = "Error updating settings: " . $conn->error;
     }
@@ -54,7 +55,7 @@ $setting = $conn->query("SELECT * FROM settings WHERE id = 1")->fetch_assoc();
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>KDS Settings - Multi-Vendor Credentials</title>
+    <title>KDS Settings - UK Multi-Vendor</title>
     <style>
         body { font-family: Arial, sans-serif; background: #f4f5f7; padding: 20px; }
         .container { max-width: 650px; margin: 0 auto; }
@@ -89,7 +90,7 @@ $setting = $conn->query("SELECT * FROM settings WHERE id = 1")->fetch_assoc();
                 <!-- UBER EATS -->
                 <div class="vendor-section">
                     <h3>
-                        <span>Uber Eats Integrations</span>
+                        <span>Uber Eats Integration</span>
                         <label class="toggle-label">
                             <input type="checkbox" name="uber_enabled" value="1" <?= ($setting['uber_enabled'] ?? 1) ? 'checked' : '' ?>> Enable
                         </label>
@@ -101,28 +102,25 @@ $setting = $conn->query("SELECT * FROM settings WHERE id = 1")->fetch_assoc();
                     <input type="password" name="uber_client_secret" value="<?= htmlspecialchars($setting['uber_client_secret'] ?? '') ?>">
                 </div>
 
-                <!-- DOORDASH -->
+                <!-- JUST EAT -->
                 <div class="vendor-section">
                     <h3>
-                        <span>DoorDash Integrations</span>
+                        <span>Just Eat Integration</span>
                         <label class="toggle-label">
-                            <input type="checkbox" name="doordash_enabled" value="1" <?= ($setting['doordash_enabled'] ?? 1) ? 'checked' : '' ?>> Enable
+                            <input type="checkbox" name="justeat_enabled" value="1" <?= ($setting['justeat_enabled'] ?? 1) ? 'checked' : '' ?>> Enable
                         </label>
                     </h3>
-                    <label>DoorDash Developer ID:</label>
-                    <input type="text" name="doordash_developer_id" value="<?= htmlspecialchars($setting['doordash_developer_id'] ?? '') ?>">
+                    <label>Just Eat Restaurant ID:</label>
+                    <input type="text" name="justeat_restaurant_id" value="<?= htmlspecialchars($setting['justeat_restaurant_id'] ?? '') ?>">
 
-                    <label>DoorDash Key ID:</label>
-                    <input type="text" name="doordash_key_id" value="<?= htmlspecialchars($setting['doordash_key_id'] ?? '') ?>">
-
-                    <label>DoorDash Signing Secret:</label>
-                    <input type="password" name="doordash_signing_secret" value="<?= htmlspecialchars($setting['doordash_signing_secret'] ?? '') ?>">
+                    <label>Just Eat API Key:</label>
+                    <input type="password" name="justeat_api_key" value="<?= htmlspecialchars($setting['justeat_api_key'] ?? '') ?>">
                 </div>
 
                 <!-- DELIVEROO -->
                 <div class="vendor-section">
                     <h3>
-                        <span>Deliveroo Integrations</span>
+                        <span>Deliveroo Integration</span>
                         <label class="toggle-label">
                             <input type="checkbox" name="deliveroo_enabled" value="1" <?= ($setting['deliveroo_enabled'] ?? 1) ? 'checked' : '' ?>> Enable
                         </label>
