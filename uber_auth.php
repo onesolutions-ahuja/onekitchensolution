@@ -13,8 +13,7 @@ $post_fields = [
     'client_id' => $client_id,
     'client_secret' => $client_secret,
     'grant_type' => 'client_credentials',
-    'scope' => 'eats.store.orders eats.order'
-];
+ ];
 
 $ch = curl_init($token_url);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
