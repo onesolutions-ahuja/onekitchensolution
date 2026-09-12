@@ -10,7 +10,8 @@ $redirect_uri = "https://onekitchensolution.onrender.com/uber_callback.php";
 
 $uber_auth_url = "https://auth.uber.com/oauth/v2/authorize?client_id=" . urlencode($client_id) . 
                  "&response_type=code&redirect_uri=" . urlencode($redirect_uri) . 
-                 "&scope=eats.pos_provisioning";
+                 "&scope=eats.store";
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
