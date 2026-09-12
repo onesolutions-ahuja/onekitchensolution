@@ -12,8 +12,8 @@ $setting = $setting_res ? $setting_res->fetch_assoc() : [];
 $store_name = $setting['store_name'] ?? 'One Kitchen Solution';
 
 // Fetch summary metrics
-$total_revenue_res = $conn->query("SELECT SUM(total) as revenue, COUNT(*) as total_orders FROM orders WHERE status != 'CANCELLED'");
-$metrics = $total_revenue_res->fetch_assoc();
+$total_revenue_res = $conn->query("SELECT SUM(total) as revenue, COUNT(*) as total_orders WHERE status != 'CANCELLED'");
+$metrics = $total_revenue_res ? $total_revenue_res->fetch_assoc() : ['revenue' => 0, 'total_orders' => 0];
 
 $vendor_stats_res = $conn->query("SELECT source, COUNT(*) as count, SUM(total) as revenue FROM orders WHERE status != 'CANCELLED' GROUP BY source");
 
@@ -161,12 +161,14 @@ $orders = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
         <div class="vendor-breakdown">
             <strong>Revenue Breakdown by Vendor:</strong>
             <div class="vendor-list">
-                <?php foreach ($vendor_stats_res as $v): ?>
-                    <div class="vendor-item">
-                        <span class="vendor-badge badge-<?= htmlspecialchars($v['source']) ?>"><?= htmlspecialchars($v['source']) ?></span>
-                        <?= (int)$v['count'] ?> orders — <strong>£<?= number_format($v['revenue'], 2) ?></strong>
-                    </div>
-                <?php endforeach; ?>
+                <?php if ($vendor_stats_res): ?>
+                    <?php while ($v = $vendor_stats_res->fetch_assoc()): ?>
+                        <div class="vendor-item">
+                            <span class="vendor-badge badge-<?= htmlspecialchars($v['source']) ?>"><?= htmlspecialchars($v['source']) ?></span>
+                            <?= (int)$v['count'] ?> orders — <strong>£<?= number_format($v['revenue'], 2) ?></strong>
+                        </div>
+                    <?php endwhile; ?>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -208,15 +210,18 @@ $orders = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
                 <?php if (empty($orders)): ?>
                     <tr><td colspan="8" style="text-align:center; padding: 25px; color: #94a3b8;">No orders found matching criteria.</td></tr>
                 <?php else: ?>
-                    <?php foreach ($orders as $o): ?>
+                    <?php foreach ($orders as $o): 
+                        // Safely encode order data as a JSON string to pass into JavaScript functions without breaking quotes or newlines
+                        $orderJson = htmlspecialchars(json_encode($o), ENT_QUOTES, 'UTF-8');
+                    ?>
                         <tr>
                             <td style="text-align: center;">
-                                <button type="button" onclick="printOrder('<?= htmlspecialchars($o['order_id']) ?>', '<?= htmlspecialchars($o['source']) ?>', '<?= htmlspecialchars($o['customer_name']) ?>', '<?= addslashes($o['items']) ?>', '<?= number_format($o['total'], 2) ?>', '<?= htmlspecialchars($o['status']) ?>', '<?= htmlspecialchars($o['created_at']) ?>')" class="btn-print-sm" title="Print Ticket">
+                                <button type="button" onclick="printOrder(<?= $orderJson ?>)" class="btn-print-sm" title="Print Ticket">
                                     <i class="fa-solid fa-print"></i>
                                 </button>
                             </td>
                             <td>
-                                <a class="order-id-link" onclick="openDetailsModal('<?= htmlspecialchars($o['order_id']) ?>', '<?= htmlspecialchars($o['source']) ?>', '<?= htmlspecialchars($o['customer_name']) ?>', '<?= addslashes($o['items']) ?>', '<?= number_format($o['total'], 2) ?>', '<?= htmlspecialchars($o['status']) ?>', '<?= htmlspecialchars($o['created_at']) ?>')">
+                                <a class="order-id-link" onclick="openDetailsModal(<?= $orderJson ?>)">
                                     #<?= htmlspecialchars($o['order_id']) ?>
                                 </a>
                             </td>
@@ -271,14 +276,14 @@ $orders = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     </div>
 
     <script>
-    function openDetailsModal(orderId, source, customer, items, total, status, time) {
-        document.getElementById('modalOrderId').innerText = '#' + orderId;
-        document.getElementById('modalVendor').innerText = source;
-        document.getElementById('modalCustomer').innerText = customer;
-        document.getElementById('modalStatus').innerText = status;
-        document.getElementById('modalTime').innerText = time;
-        document.getElementById('modalItems').innerText = items;
-        document.getElementById('modalTotal').innerText = '£' + total;
+    function openDetailsModal(order) {
+        document.getElementById('modalOrderId').innerText = '#' + order.order_id;
+        document.getElementById('modalVendor').innerText = order.source;
+        document.getElementById('modalCustomer').innerText = order.customer_name;
+        document.getElementById('modalStatus').innerText = order.status;
+        document.getElementById('modalTime').innerText = order.created_at;
+        document.getElementById('modalItems').innerText = order.items;
+        document.getElementById('modalTotal').innerText = '£' + parseFloat(order.total).toFixed(2);
         
         document.getElementById('detailsModal').style.display = 'flex';
     }
@@ -287,14 +292,14 @@ $orders = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
         document.getElementById('detailsModal').style.display = 'none';
     }
 
-    function printOrder(orderId, source, customer, items, total, status, time) {
-        document.getElementById('printOrderId').innerText = '#' + orderId;
-        document.getElementById('printVendor').innerText = source;
-        document.getElementById('printCustomer').innerText = customer;
-        document.getElementById('printTime').innerText = time;
-        document.getElementById('printItems').innerText = items;
-        document.getElementById('printTotal').innerText = '£' + total;
-        document.getElementById('printStatus').innerText = status;
+    function printOrder(order) {
+        document.getElementById('printOrderId').innerText = '#' + order.order_id;
+        document.getElementById('printVendor').innerText = order.source;
+        document.getElementById('printCustomer').innerText = order.customer_name;
+        document.getElementById('printTime').innerText = order.created_at;
+        document.getElementById('printItems').innerText = order.items;
+        document.getElementById('printTotal').innerText = '£' + parseFloat(order.total).toFixed(2);
+        document.getElementById('printStatus').innerText = order.status;
 
         window.print();
     }
