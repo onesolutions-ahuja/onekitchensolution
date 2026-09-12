@@ -8,11 +8,10 @@ $setting = $setting_res ? $setting_res->fetch_assoc() : [];
 $client_id = $setting['uber_client_id'] ?? '';
 $redirect_uri = "https://onekitchensolution.onrender.com/uber_callback.php";
 
-// Correct authorization endpoint and eats marketplace user scopes
 $uber_auth_url = "https://auth.uber.com/oauth/v2/authorize?client_id=" . urlencode($client_id) . 
                  "&response_type=code&redirect_uri=" . urlencode($redirect_uri) . 
                  "&scope=eats.pos_provisioning";
-
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -27,13 +26,13 @@ $uber_auth_url = "https://auth.uber.com/oauth/v2/authorize?client_id=" . urlenco
 </head>
 <body>
     <div class="box">
-        <h2>🔗 Connect Uber Eats</h2>
+        <h2>Connect Uber Eats</h2>
         <p>Link your Uber restaurant account to allow automatic order completion and PIN verification.</p>
         <?php if (empty($client_id)): ?>
             <p style="color: #ef4444;">Please save your Uber Client ID in the Settings page first!</p>
             <a href="settings.php" class="btn" style="background: #334155;">Go to Settings</a>
         <?php else: ?>
-            <a href="<?= $uber_auth_url ?>" class="btn">Authorize with Uber Eats</a>
+            <a href="<?= htmlspecialchars($uber_auth_url) ?>" class="btn">Authorize with Uber Eats</a>
         <?php endif; ?>
     </div>
 </body>
