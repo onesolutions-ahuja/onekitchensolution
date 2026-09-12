@@ -28,19 +28,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $deliveroo_brand_id = trim($_POST['deliveroo_brand_id']);
     $deliveroo_api_key = trim($_POST['deliveroo_api_key']);
 
+    // Prepared statement matching exactly 12 variables (s iii s s i s s i s s s -> 12 total)
     $stmt = $conn->prepare("UPDATE settings SET 
         store_name = ?, 
         auto_refresh_sec = ?, 
-        uber_enabled = ?, uber_require_otp = ?, uber_client_id = ?, uber_client_secret = ?,
-        justeat_enabled = ?, justeat_restaurant_id = ?, justeat_api_key = ?,
-        deliveroo_enabled = ?, deliveroo_brand_id = ?, deliveroo_api_key = ?
+        uber_enabled = ?, 
+        uber_require_otp = ?, 
+        uber_client_id = ?, 
+        uber_client_secret = ?,
+        justeat_enabled = ?, 
+        justeat_restaurant_id = ?, 
+        justeat_api_key = ?,
+        deliveroo_enabled = ?, 
+        deliveroo_brand_id = ?, 
+        deliveroo_api_key = ?
         WHERE id = 1");
 
-    $stmt->bind_param("siiiisissis", 
-        $store_name, $refresh_sec,
-        $uber_enabled, $uber_require_otp, $uber_client_id, $uber_client_secret,
-        $justeat_enabled, $justeat_restaurant_id, $justeat_api_key,
-        $deliveroo_enabled, $deliveroo_brand_id, $deliveroo_api_key
+    // Types string: s(1) i(2) i(3) i(4) s(5) s(6) i(7) s(8) s(9) i(10) s(11) s(12) = "siiiisississ"
+    $stmt->bind_param("siiissississ", 
+        $store_name,          // s (1)
+        $refresh_sec,         // i (2)
+        $uber_enabled,        // i (3)
+        $uber_require_otp,    // i (4)
+        $uber_client_id,      // s (5)
+        $uber_client_secret,  // s (6)
+        $justeat_enabled,     // i (7)
+        $justeat_restaurant_id, // s (8)
+        $justeat_api_key,     // s (9)
+        $deliveroo_enabled,   // i (10)
+        $deliveroo_brand_id,  // s (11)
+        $deliveroo_api_key    // s (12)
     );
 
     if ($stmt->execute()) {
@@ -50,7 +67,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$setting = $conn->query("SELECT * FROM settings WHERE id = 1")->fetch_assoc();
+$setting_res = $conn->query("SELECT * FROM settings WHERE id = 1");
+$setting = $setting_res ? $setting_res->fetch_assoc() : [];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -86,14 +104,14 @@ $setting = $conn->query("SELECT * FROM settings WHERE id = 1")->fetch_assoc();
                 <input type="text" name="store_name" value="<?= htmlspecialchars($setting['store_name'] ?? 'One Kitchen Hub') ?>" required>
 
                 <label>Auto Refresh Rate (Seconds):</label>
-                <input type="number" name="auto_refresh_sec" value="<?= $setting['auto_refresh_sec'] ?? 3 ?>" min="1" max="60" required>
+                <input type="number" name="auto_refresh_sec" value="<?= htmlspecialchars($setting['auto_refresh_sec'] ?? 3) ?>" min="1" max="60" required>
 
                 <!-- UBER EATS -->
                 <div class="vendor-section">
                     <h3>
                         <span>Uber Eats Integration</span>
                         <label class="toggle-label">
-                            <input type="checkbox" name="uber_enabled" value="1" <?= ($setting['uber_enabled'] ?? 1) ? 'checked' : '' ?>> Enable
+                            <input type="checkbox" name="uber_enabled" value="1" <?= (!isset($setting['uber_enabled']) || $setting['uber_enabled'] == 1) ? 'checked' : '' ?>> Enable
                         </label>
                     </h3>
                     <label>Uber Client ID:</label>
@@ -104,7 +122,7 @@ $setting = $conn->query("SELECT * FROM settings WHERE id = 1")->fetch_assoc();
 
                     <div class="sub-setting">
                         <label class="toggle-label">
-                            <input type="checkbox" name="uber_require_otp" value="1" <?= ($setting['uber_require_otp'] ?? 0) ? 'checked' : '' ?>>
+                            <input type="checkbox" name="uber_require_otp" value="1" <?= (!empty($setting['uber_require_otp'])) ? 'checked' : '' ?>>
                             Require OTP / PIN verification on delivery pickup
                         </label>
                     </div>
@@ -115,7 +133,7 @@ $setting = $conn->query("SELECT * FROM settings WHERE id = 1")->fetch_assoc();
                     <h3>
                         <span>Just Eat Integration</span>
                         <label class="toggle-label">
-                            <input type="checkbox" name="justeat_enabled" value="1" <?= ($setting['justeat_enabled'] ?? 1) ? 'checked' : '' ?>> Enable
+                            <input type="checkbox" name="justeat_enabled" value="1" <?= (!isset($setting['justeat_enabled']) || $setting['justeat_enabled'] == 1) ? 'checked' : '' ?>> Enable
                         </label>
                     </h3>
                     <label>Just Eat Restaurant ID:</label>
@@ -130,7 +148,7 @@ $setting = $conn->query("SELECT * FROM settings WHERE id = 1")->fetch_assoc();
                     <h3>
                         <span>Deliveroo Integration</span>
                         <label class="toggle-label">
-                            <input type="checkbox" name="deliveroo_enabled" value="1" <?= ($setting['deliveroo_enabled'] ?? 1) ? 'checked' : '' ?>> Enable
+                            <input type="checkbox" name="deliveroo_enabled" value="1" <?= (!isset($setting['deliveroo_enabled']) || $setting['deliveroo_enabled'] == 1) ? 'checked' : '' ?>> Enable
                         </label>
                     </h3>
                     <label>Deliveroo Brand / Store ID:</label>
