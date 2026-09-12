@@ -39,6 +39,7 @@ $refresh_rate = ($setting['auto_refresh_sec'] ?? 3) * 1000;
         <h1><?= htmlspecialchars($store_name) ?> (Kitchen Display System)</h1>
         <div class="nav-links">
             <a href="settings.php">Settings</a>
+            <a href="history.php" class="nav-btn">Order History & Analytics</a>
             <a href="logout.php">Logout</a>
         </div>
     </div>
