@@ -7,7 +7,7 @@ $auth_url = "https://sandbox-login.uber.com/oauth/v2/authorize?" . http_build_qu
     'client_id' => $client_id,
     'response_type' => 'code',
     'redirect_uri' => $redirect_uri,
-    'scope' => 'eats.order eats.store eats.pos_provisioning'
+    'scope' => 'eats.pos_provisioning'
 ]);
 
 echo "<h2>Kitchen Display System - Authorization</h2>";
