@@ -1,13 +1,24 @@
 <?php
-$host   = getenv('DB_HOST') ?: 'gateway01.eu-central-1.prod.aws.tidbcloud.com';
-$user   = getenv('DB_USER') ?: '23PFnNCAJo2UvRB.root';
-$pass   = getenv('DB_PASS') ?: 'OzzHz3Y1GObSN6F7';
-$dbname = getenv('DB_NAME') ?: 'test';
-$port   = getenv('DB_PORT') ?: 4000;
+$host = getenv('DB_HOST');
+$port = getenv('DB_PORT') ?: 4000;
+$user = getenv('DB_USER');
+$pass = getenv('DB_PASS');
+$name = getenv('DB_NAME');
 
-$conn = new mysqli($host, $user, $pass, $dbname, (int)$port);
+// Initialize MySQLi object
+$conn = mysqli_init();
 
-if ($conn->connect_error) {
-    die(json_encode(["status" => "error", "message" => "Database Connection Failed: " . $conn->connect_error]));
+if (!$conn) {
+    die("mysqli_init failed");
+}
+
+// Enable SSL encryption (required by TiDB Cloud)
+$conn->ssl_set(NULL, NULL, NULL, NULL, NULL);
+
+// Establish secure connection
+$success = $conn->real_connect($host, $user, $pass, $name, $port, NULL, MYSQLI_CLIENT_SSL);
+
+if (!$success) {
+    die("Connection failed: " . mysqli_connect_error());
 }
 ?>
