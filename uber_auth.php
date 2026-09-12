@@ -8,11 +8,9 @@ $setting = $setting_res ? $setting_res->fetch_assoc() : [];
 $client_id = $setting['uber_client_id'] ?? '';
 $redirect_uri = "https://" . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . "/uber_callback.php";
 
-// Step 2 from Uber Dashboard: Redirect URL to Uber Login
-echo "Debug Client ID: " . htmlspecialchars($client_id); exit;
 $uber_auth_url = "https://login.uber.com/oauth/v2/authorize?client_id=" . urlencode($client_id) . 
                  "&response_type=code&redirect_uri=" . urlencode($redirect_uri) . 
-                 "&scope=eats.store.orders%20eats.order"; // Adjust scopes as needed
+                 "&scope=eats.store.orders%20eats.order";
 ?>
 <!DOCTYPE html>
 <html lang="en">
