@@ -30,8 +30,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_status'])) {
 
         if ($order_data && $order_data['source'] === 'UBER_EATS' && $uber_require_otp) {
             
-            // --- CALL UBER EATS API TO VERIFY PIN ---
-            $uber_api_url = "https://api.uber.com/v1/eats/stores/" . urlencode($setting['justeat_restaurant_id'] ?? '') . "/orders/" . urlencode($order_id) . "/complete";
+            // Send the entered PIN directly to Uber's API for validation
+            $uber_api_url = "https://api.uber.com/v1/eats/stores/" . urlencode($setting['uber_store_id'] ?? '') . "/orders/" . urlencode($order_id) . "/complete";
             
             $payload = json_encode([
                 "pin" => $entered_otp
@@ -50,14 +50,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_status'])) {
             $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
 
-            // If Uber returns an error code for wrong PIN
+            // If Uber rejects the PIN, show an error and keep the order active
             if ($http_code !== 200 && $http_code !== 204) {
-                $error_msg = "Uber API Error: Invalid PIN / OTP entered. Please try again.";
+                $error_msg = "Uber API Error: Invalid PIN entered. Please check with the driver.";
             }
         }
     }
 
-    // If no errors occurred, update database status
+    // If no errors occurred, update local database status
     if (empty($error_msg)) {
         $stmt = $conn->prepare("UPDATE orders SET status = ? WHERE order_id = ?");
         $stmt->bind_param("ss", $new_status, $order_id);
