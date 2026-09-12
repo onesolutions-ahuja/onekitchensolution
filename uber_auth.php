@@ -6,7 +6,7 @@ $setting_res = $conn->query("SELECT * FROM settings WHERE id = 1");
 $setting = $setting_res ? $setting_res->fetch_assoc() : [];
 
 $client_id = $setting['uber_client_id'] ?? '';
-$redirect_uri = "https://" . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . "/uber_callback.php";
+$redirect_uri = "https://onekitchensolution.onrender.com/uber_callback.php";
 
 // Correct authorization endpoint and eats marketplace user scopes
 $uber_auth_url = "https://auth.uber.com/oauth/v2/authorize?client_id=" . urlencode($client_id) . 
