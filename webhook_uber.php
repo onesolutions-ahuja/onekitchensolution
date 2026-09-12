@@ -1,29 +1,33 @@
 <?php
+// Allow cross-origin POST requests from webhooks / Postman
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
 header('Content-Type: application/json');
+
+// Handle preflight OPTIONS request
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
 require_once 'db.php';
 
 // Retrieve raw POST body
 $input = file_get_contents('php://input');
 $data = json_decode($input, true);
 
-// Fallback / standard logging for debugging
 if (!$data) {
     http_response_code(400);
-    echo json_encode(['status' => 'error', 'message' => 'Invalid JSON']);
+    echo json_encode(['status' => 'error', 'message' => 'Invalid JSON payload received']);
     exit;
 }
 
-/*
- * Uber Eats Webhook Event Structure:
- * event_type: "orders.notification"
- * payload contains: order details, customer info, and items list
- */
-
-// Parse order parameters from Uber's payload format
+// Extract payload fields
 $order_id = $data['order_id'] ?? $data['id'] ?? ('UBER-' . rand(1000, 9999));
 $customer_name = $data['customer']['name'] ?? $data['eater']['first_name'] ?? 'Uber Eats Customer';
 
-// Parse items array into a clean text string
+// Parse item list
 $items_list = [];
 if (!empty($data['cart']['items'])) {
     foreach ($data['cart']['items'] as $item) {
@@ -33,13 +37,13 @@ if (!empty($data['cart']['items'])) {
     }
     $items_formatted = implode(', ', $items_list);
 } else {
-    $items_formatted = $data['items_description'] ?? '1x Standard Meal Deal';
+    $items_formatted = $data['items_description'] ?? '1x Standard Meal';
 }
 
-// Calculate total price
+// Parse price total
 $total = isset($data['payment']['total']) ? ($data['payment']['total'] / 100) : ($data['total'] ?? 0.00);
 
-// Insert into orders table
+// Save order to database
 $stmt = $conn->prepare("INSERT INTO orders (order_id, customer_name, items, total, status, source) VALUES (?, ?, ?, ?, 'PENDING', 'UBER_EATS')");
 $stmt->bind_param("sssd", $order_id, $customer_name, $items_formatted, $total);
 
