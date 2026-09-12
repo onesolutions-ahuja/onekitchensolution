@@ -11,8 +11,8 @@ $setting_res = $conn->query("SELECT store_name FROM settings WHERE id = 1");
 $setting = $setting_res ? $setting_res->fetch_assoc() : [];
 $store_name = $setting['store_name'] ?? 'One Kitchen Solution';
 
-// Fetch summary metrics
-$total_revenue_res = $conn->query("SELECT SUM(total) as revenue, COUNT(*) as total_orders WHERE status != 'CANCELLED'");
+// Fetch summary metrics (Fixed missing FROM orders)
+$total_revenue_res = $conn->query("SELECT SUM(total) as revenue, COUNT(*) as total_orders FROM orders WHERE status != 'CANCELLED'");
 $metrics = $total_revenue_res ? $total_revenue_res->fetch_assoc() : ['revenue' => 0, 'total_orders' => 0];
 
 $vendor_stats_res = $conn->query("SELECT source, COUNT(*) as count, SUM(total) as revenue FROM orders WHERE status != 'CANCELLED' GROUP BY source");
@@ -211,7 +211,6 @@ $orders = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
                     <tr><td colspan="8" style="text-align:center; padding: 25px; color: #94a3b8;">No orders found matching criteria.</td></tr>
                 <?php else: ?>
                     <?php foreach ($orders as $o): 
-                        // Safely encode order data as a JSON string to pass into JavaScript functions without breaking quotes or newlines
                         $orderJson = htmlspecialchars(json_encode($o), ENT_QUOTES, 'UTF-8');
                     ?>
                         <tr>
