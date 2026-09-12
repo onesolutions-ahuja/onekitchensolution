@@ -7,7 +7,7 @@ if (!isset($_SESSION['user_id'])) {
 require_once 'db.php';
 
 // Fetch store settings
-$setting_res = $conn->query("SELECT store_name, auto_refresh_sec, uber_require_otp FROM settings WHERE id = 1");
+$setting_res = $conn->query("SELECT store_name, auto_refresh_sec  FROM settings WHERE id = 1");
 $setting = $setting_res ? $setting_res->fetch_assoc() : [];
 $store_name = $setting['store_name'] ?? 'One Kitchen Solution';
 $refresh_sec = $setting['auto_refresh_sec'] ?? 3;
