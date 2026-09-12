@@ -10,7 +10,7 @@ require_once 'db.php';
 $setting_res = $conn->query("SELECT store_name, auto_refresh_sec, uber_require_otp FROM settings WHERE id = 1");
 $setting = $setting_res ? $setting_res->fetch_assoc() : [];
 $store_name = $setting['store_name'] ?? 'One Kitchen Solution';
-$refresh_sec = max(2, (int)($setting['auto_refresh_sec'] ?? 3)); // Poll interval in seconds
+$refresh_sec = max(2, (int)($setting['auto_refresh_sec'] ?? 3));
 $uber_require_otp = $setting['uber_require_otp'] ?? 0;
 
 // Handle Status Updates (Completed, Pending, etc.)
@@ -191,7 +191,7 @@ $orders = $orders_res ? $orders_res->fetch_all(MYSQLI_ASSOC) : [];
     }
 
     function closeOtpModal() {
-        document.getElementById('otpModal'].style.display = 'none';
+        document.getElementById('otpModal').style.display = 'none';
     }
 
     function openCancelModal(orderId) {
@@ -230,7 +230,6 @@ $orders = $orders_res ? $orders_res->fetch_all(MYSQLI_ASSOC) : [];
         const otpOpen = document.getElementById('otpModal').style.display === 'flex';
         const cancelOpen = document.getElementById('cancelModal').style.display === 'flex';
 
-        // Do not refresh if staff is actively typing an OTP or cancellation reason
         if (otpOpen || cancelOpen) return;
 
         fetch('index.php')
