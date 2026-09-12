@@ -11,7 +11,7 @@ $setting_res = $conn->query("SELECT store_name FROM settings WHERE id = 1");
 $setting = $setting_res ? $setting_res->fetch_assoc() : [];
 $store_name = $setting['store_name'] ?? 'One Kitchen Solution';
 
-// Fetch summary metrics (Fixed missing FROM orders)
+// Fetch summary metrics
 $total_revenue_res = $conn->query("SELECT SUM(total) as revenue, COUNT(*) as total_orders FROM orders WHERE status != 'CANCELLED'");
 $metrics = $total_revenue_res ? $total_revenue_res->fetch_assoc() : ['revenue' => 0, 'total_orders' => 0];
 
@@ -88,6 +88,7 @@ $orders = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
         .badge-UBER_EATS { background: #000; border: 1px solid #475569; }
         .badge-JUST_EAT { background: #ff8000; }
         .badge-DELIVEROO { background: #00ccbc; }
+        .badge-DOORDASH { background: #ff3008; }
 
         /* Filter Form */
         .filter-card { background: #1e293b; padding: 15px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border: 1px solid #334155; }
@@ -128,7 +129,7 @@ $orders = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
         @media print {
             body * { visibility: hidden; }
             .printable-ticket, .printable-ticket * { visibility: visible; }
-            .printable-ticket { position: absolute; left: 0; top: 0; width: 100%; background: white !important; color: black !important; padding: 20px; box-shadow: none !important; border: none !important; }
+            .printable-ticket { display: block !important; position: absolute; left: 0; top: 0; width: 100%; background: white !important; color: black !important; padding: 20px; box-shadow: none !important; border: none !important; }
         }
     </style>
 </head>
@@ -181,6 +182,7 @@ $orders = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
                     <option value="UBER_EATS" <?= $vendor_filter === 'UBER_EATS' ? 'selected' : '' ?>>Uber Eats</option>
                     <option value="JUST_EAT" <?= $vendor_filter === 'JUST_EAT' ? 'selected' : '' ?>>Just Eat</option>
                     <option value="DELIVEROO" <?= $vendor_filter === 'DELIVEROO' ? 'selected' : '' ?>>Deliveroo</option>
+                    <option value="DOORDASH" <?= $vendor_filter === 'DOORDASH' ? 'selected' : '' ?>>DoorDash</option>
                 </select>
                 <select name="status">
                     <option value="">All Statuses</option>
