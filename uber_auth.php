@@ -8,7 +8,7 @@ $setting = $setting_res ? $setting_res->fetch_assoc() : [];
 $client_id = $setting['uber_client_id'] ?? '';
 $redirect_uri = "https://" . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . "/uber_callback.php";
 
-$uber_auth_url = "https://login.uber.com/oauth/v2/authorize?client_id=" . urlencode($client_id) . 
+$uber_auth_url = "https://auth.uber.com/oauth/v2/authorize?client_id=" . urlencode($client_id) . 
                  "&response_type=code&redirect_uri=" . urlencode($redirect_uri) . 
                  "&scope=eats.store.orders%20eats.order";
 ?>
