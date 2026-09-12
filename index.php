@@ -10,16 +10,14 @@ require_once 'db.php';
 $setting_res = $conn->query("SELECT store_name, auto_refresh_sec, uber_require_otp FROM settings WHERE id = 1");
 $setting = $setting_res ? $setting_res->fetch_assoc() : [];
 $store_name = $setting['store_name'] ?? 'One Kitchen Solution';
-$refresh_sec = $setting['auto_refresh_sec'] ?? 3;
+$refresh_sec = max(2, (int)($setting['auto_refresh_sec'] ?? 3)); // Poll interval in seconds
 $uber_require_otp = $setting['uber_require_otp'] ?? 0;
 
 // Handle Status Updates (Completed, Pending, etc.)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_status'])) {
     $order_id = $_POST['order_id'];
     $new_status = $_POST['status'];
-    $entered_otp = trim($_POST['entered_otp'] ?? '');
-
-    // If it's an Uber Eats order and OTP is required, we can validate or log it
+    
     $stmt = $conn->prepare("UPDATE orders SET status = ? WHERE order_id = ?");
     $stmt->bind_param("ss", $new_status, $order_id);
     $stmt->execute();
@@ -38,7 +36,6 @@ $orders = $orders_res ? $orders_res->fetch_all(MYSQLI_ASSOC) : [];
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($store_name) ?> - KDS Dashboard</title>
-    <meta http-equiv="refresh" content="<?= (int)$refresh_sec ?>">
     <style>
         * { box-sizing: border-box; }
         body { font-family: Arial, sans-serif; background-color: #0f172a; color: #f8fafc; margin: 0; padding: 20px; }
@@ -99,7 +96,8 @@ $orders = $orders_res ? $orders_res->fetch_all(MYSQLI_ASSOC) : [];
         </div>
     </div>
 
-    <div class="kds-grid">
+    <!-- Active Orders Grid Container -->
+    <div id="kdsGridContainer" class="kds-grid">
         <?php if (empty($orders)): ?>
             <div class="empty-state">
                 <h2>No active orders right now</h2>
@@ -152,7 +150,7 @@ $orders = $orders_res ? $orders_res->fetch_all(MYSQLI_ASSOC) : [];
         <div class="modal-content">
             <h3 style="color: #f59e0b;">🔑 Verify Uber Eats OTP</h3>
             <p>This order requires a pickup PIN/OTP from the driver before completion.</p>
-            <form method="POST" id="otpForm">
+            <form method="POST">
                 <input type="hidden" name="order_id" id="otpOrderId">
                 <input type="hidden" name="status" value="COMPLETED">
                 <label style="font-size: 13px; color: #94a3b8;">Enter Driver OTP / PIN:</label>
@@ -185,6 +183,7 @@ $orders = $orders_res ? $orders_res->fetch_all(MYSQLI_ASSOC) : [];
 
     <script>
     let activeCancelId = null;
+    const pollIntervalSec = <?= (int)$refresh_sec ?> * 1000;
 
     function openOtpModal(orderId) {
         document.getElementById('otpOrderId').value = orderId;
@@ -192,7 +191,7 @@ $orders = $orders_res ? $orders_res->fetch_all(MYSQLI_ASSOC) : [];
     }
 
     function closeOtpModal() {
-        document.getElementById('otpModal').style.display = 'none';
+        document.getElementById('otpModal'].style.display = 'none';
     }
 
     function openCancelModal(orderId) {
@@ -225,6 +224,27 @@ $orders = $orders_res ? $orders_res->fetch_all(MYSQLI_ASSOC) : [];
             }
         });
     }
+
+    // Auto-poll for new orders in the background ONLY if no modals are currently open
+    setInterval(() => {
+        const otpOpen = document.getElementById('otpModal').style.display === 'flex';
+        const cancelOpen = document.getElementById('cancelModal').style.display === 'flex';
+
+        // Do not refresh if staff is actively typing an OTP or cancellation reason
+        if (otpOpen || cancelOpen) return;
+
+        fetch('index.php')
+            .then(res => res.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const newGrid = doc.getElementById('kdsGridContainer');
+                if (newGrid) {
+                    document.getElementById('kdsGridContainer').innerHTML = newGrid.innerHTML;
+                }
+            })
+            .catch(err => console.log('Background poll error:', err));
+    }, pollIntervalSec);
     </script>
 </body>
 </html>
