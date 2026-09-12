@@ -19,9 +19,8 @@ if (!$access_token) {
     die("Token acquisition failed: " . $response);
 }
 
-// 2. Use the token against the SANDBOX API endpoint (test-api.uber.com)
-$store_id = 'YOUR_SANDBOX_STORE_ID'; 
-$ch = curl_init("https://test-api.uber.com/v1/eats/stores/{$store_id}");
+// 2. Fetch the list of available sandbox stores linked to your app
+$ch = curl_init("https://test-api.uber.com/v1/eats/stores");
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_HTTPHEADER, [
     "Authorization: Bearer " . $access_token,
@@ -30,5 +29,5 @@ curl_setopt($ch, CURLOPT_HTTPHEADER, [
 $store_response = curl_exec($ch);
 curl_close($ch);
 
-echo "API Connection Successful! Store Response: <pre>" . htmlspecialchars($store_response) . "</pre>";
+echo "API Connection Successful! Stores List: <pre>" . htmlspecialchars($store_response) . "</pre>";
 ?>
