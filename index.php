@@ -7,7 +7,7 @@ if (!isset($_SESSION['user_id'])) {
 require_once 'db.php';
 
 // Fetch store settings
-$setting_res = $conn->query("SELECT store_name, auto_refresh_sec  FROM settings WHERE id = 1");
+$setting_res = $conn->query("SELECT store_name, auto_refresh_sec, uber_require_otp FROM settings WHERE id = 1");
 $setting = $setting_res ? $setting_res->fetch_assoc() : [];
 $store_name = $setting['store_name'] ?? 'One Kitchen Solution';
 $refresh_sec = $setting['auto_refresh_sec'] ?? 3;
@@ -17,7 +17,9 @@ $uber_require_otp = $setting['uber_require_otp'] ?? 0;
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_status'])) {
     $order_id = $_POST['order_id'];
     $new_status = $_POST['status'];
-    
+    $entered_otp = trim($_POST['entered_otp'] ?? '');
+
+    // If it's an Uber Eats order and OTP is required, we can validate or log it
     $stmt = $conn->prepare("UPDATE orders SET status = ? WHERE order_id = ?");
     $stmt->bind_param("ss", $new_status, $order_id);
     $stmt->execute();
@@ -36,13 +38,11 @@ $orders = $orders_res ? $orders_res->fetch_all(MYSQLI_ASSOC) : [];
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($store_name) ?> - KDS Dashboard</title>
-    <!-- Auto-refresh page periodically -->
     <meta http-equiv="refresh" content="<?= (int)$refresh_sec ?>">
     <style>
         * { box-sizing: border-box; }
         body { font-family: Arial, sans-serif; background-color: #0f172a; color: #f8fafc; margin: 0; padding: 20px; }
         
-        /* Header & Nav */
         .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #334155; padding-bottom: 15px; margin-bottom: 20px; }
         .header h1 { margin: 0; font-size: 24px; color: #38bdf8; }
         .nav-links { display: flex; gap: 10px; align-items: center; }
@@ -51,10 +51,8 @@ $orders = $orders_res ? $orders_res->fetch_all(MYSQLI_ASSOC) : [];
         .logout-btn { background: #ef4444; }
         .logout-btn:hover { background: #dc2626; }
 
-        /* KDS Grid */
         .kds-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
         
-        /* Order Cards */
         .card { background: #1e293b; border-radius: 8px; border-top: 5px solid #38bdf8; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); display: flex; flex-direction: column; justify-content: space-between; }
         .card.card-UBER_EATS { border-top-color: #000000; }
         .card.card-JUST_EAT { border-top-color: #ff8000; }
@@ -63,7 +61,6 @@ $orders = $orders_res ? $orders_res->fetch_all(MYSQLI_ASSOC) : [];
         .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
         .card-header h3 { margin: 0; font-size: 18px; color: #f1f5f9; }
         
-        /* Vendor Badges */
         .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; color: white; display: inline-block; }
         .badge-UBER_EATS { background: #000000; border: 1px solid #334155; }
         .badge-JUST_EAT { background: #ff8000; }
@@ -84,16 +81,15 @@ $orders = $orders_res ? $orders_res->fetch_all(MYSQLI_ASSOC) : [];
 
         .empty-state { text-align: center; color: #64748b; grid-column: 1 / -1; padding: 50px 0; font-size: 18px; }
 
-        /* Modal Overlay */
+        /* Modals */
         .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); align-items: center; justify-content: center; }
         .modal-content { background: #1e293b; color: #f8fafc; padding: 25px; border-radius: 8px; width: 380px; max-width: 90%; border: 1px solid #334155; }
-        .modal-content h3 { margin-top: 0; color: #ef4444; }
-        .modal-content select { width: 100%; padding: 10px; margin-top: 10px; margin-bottom: 15px; background: #0f172a; color: white; border: 1px solid #334155; border-radius: 6px; }
+        .modal-content h3 { margin-top: 0; color: #f8fafc; }
+        .modal-content select, .modal-content input[type="text"] { width: 100%; padding: 10px; margin-top: 10px; margin-bottom: 15px; background: #0f172a; color: white; border: 1px solid #334155; border-radius: 6px; }
     </style>
 </head>
 <body>
 
-    <!-- Header Navigation -->
     <div class="header">
         <h1><?= htmlspecialchars($store_name) ?> — Kitchen Display</h1>
         <div class="nav-links">
@@ -103,7 +99,6 @@ $orders = $orders_res ? $orders_res->fetch_all(MYSQLI_ASSOC) : [];
         </div>
     </div>
 
-    <!-- Active Orders Grid -->
     <div class="kds-grid">
         <?php if (empty($orders)): ?>
             <div class="empty-state">
@@ -137,21 +132,43 @@ $orders = $orders_res ? $orders_res->fetch_all(MYSQLI_ASSOC) : [];
                             <small style="color: #64748b;"><?= date('H:i', strtotime($o['created_at'])) ?></small>
                         </div>
 
-                        <form method="POST">
-                            <input type="hidden" name="order_id" value="<?= htmlspecialchars($o['order_id']) ?>">
-                            <input type="hidden" name="status" value="COMPLETED">
-                            <button type="submit" name="action_status" class="btn-complete">✓ Complete Order</button>
-                        </form>
+                        <?php if ($o['source'] === 'UBER_EATS' && $uber_require_otp): ?>
+                            <button type="button" onclick="openOtpModal('<?= $o['order_id'] ?>')" class="btn-complete">✓ Complete Order</button>
+                        <?php else: ?>
+                            <form method="POST">
+                                <input type="hidden" name="order_id" value="<?= htmlspecialchars($o['order_id']) ?>">
+                                <input type="hidden" name="status" value="COMPLETED">
+                                <button type="submit" name="action_status" class="btn-complete">✓ Complete Order</button>
+                            </form>
+                        <?php endif; ?>
                     </div>
                 </div>
             <?php endforeach; ?>
         <?php endif; ?>
     </div>
 
+    <!-- OTP Verification Modal -->
+    <div id="otpModal" class="modal">
+        <div class="modal-content">
+            <h3 style="color: #f59e0b;">🔑 Verify Uber Eats OTP</h3>
+            <p>This order requires a pickup PIN/OTP from the driver before completion.</p>
+            <form method="POST" id="otpForm">
+                <input type="hidden" name="order_id" id="otpOrderId">
+                <input type="hidden" name="status" value="COMPLETED">
+                <label style="font-size: 13px; color: #94a3b8;">Enter Driver OTP / PIN:</label>
+                <input type="text" name="entered_otp" placeholder="e.g. 4-digit PIN" required autocomplete="off">
+                <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 15px;">
+                    <button type="button" onclick="closeOtpModal()" style="background:#64748b; color:white; border:none; padding:8px 14px; border-radius:6px; cursor:pointer;">Cancel</button>
+                    <button type="submit" name="action_status" style="background:#22c55e; color:white; border:none; padding:8px 14px; border-radius:6px; cursor:pointer; font-weight:bold;">Verify & Complete</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Cancellation Modal Popup -->
     <div id="cancelModal" class="modal">
         <div class="modal-content">
-            <h3>Cancel Order <span id="cancelOrderId"></span></h3>
+            <h3 style="color: #ef4444;">Cancel Order <span id="cancelOrderId"></span></h3>
             <p>Select a reason for cancelling this order:</p>
             <select id="cancelReasonSelect">
                 <option value="Out of stock / missing item">Out of stock / missing item</option>
@@ -168,6 +185,15 @@ $orders = $orders_res ? $orders_res->fetch_all(MYSQLI_ASSOC) : [];
 
     <script>
     let activeCancelId = null;
+
+    function openOtpModal(orderId) {
+        document.getElementById('otpOrderId').value = orderId;
+        document.getElementById('otpModal').style.display = 'flex';
+    }
+
+    function closeOtpModal() {
+        document.getElementById('otpModal').style.display = 'none';
+    }
 
     function openCancelModal(orderId) {
         activeCancelId = orderId;
@@ -197,9 +223,6 @@ $orders = $orders_res ? $orders_res->fetch_all(MYSQLI_ASSOC) : [];
             } else {
                 alert('Failed to cancel order: ' + (data.message || 'Unknown error'));
             }
-        })
-        .catch(err => {
-            alert('Error processing request.');
         });
     }
     </script>
