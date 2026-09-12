@@ -48,6 +48,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_status'])) {
 
             $response = curl_exec($ch);
             $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+
+// FOR TESTING ONLY: Pretend any PIN except '1234' fails
+if ($entered_otp !== '1234') {
+    $http_code = 400; // Forces an error response code
+} else {
+    $http_code = 200; // Forces success for '1234'
+}
+
+            
             curl_close($ch);
 
             // If Uber rejects the PIN, show an error and keep the order active
