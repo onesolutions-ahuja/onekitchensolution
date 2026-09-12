@@ -1,5 +1,5 @@
 <?php
-// 1. Fetch token using client_credentials
+// 1. Fetch token using client_credentials from sandbox auth
 $ch = curl_init('https://sandbox-login.uber.com/oauth/v2/token');
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_POST, true);
@@ -19,9 +19,9 @@ if (!$access_token) {
     die("Token acquisition failed: " . $response);
 }
 
-// 2. Use the token to test fetching store/orders from Sandbox
-$store_id = 'YOUR_SANDBOX_STORE_ID'; // Replace with your test store ID if available
-$ch = curl_init("https://api.uber.com/v1/eats/stores/{$store_id}");
+// 2. Use the token against the SANDBOX API endpoint (test-api.uber.com)
+$store_id = 'YOUR_SANDBOX_STORE_ID'; 
+$ch = curl_init("https://test-api.uber.com/v1/eats/stores/{$store_id}");
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_HTTPHEADER, [
     "Authorization: Bearer " . $access_token,
