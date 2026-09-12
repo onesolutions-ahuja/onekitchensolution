@@ -11,7 +11,8 @@ $redirect_uri = "https://onekitchensolution.onrender.com/uber_callback.php";
 // Correct authorization endpoint and eats marketplace user scopes
 $uber_auth_url = "https://auth.uber.com/oauth/v2/authorize?client_id=" . urlencode($client_id) . 
                  "&response_type=code&redirect_uri=" . urlencode($redirect_uri) . 
-                 "&scope=eats.store";?>
+                 "&scope=eats.pos_provisioning";
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
