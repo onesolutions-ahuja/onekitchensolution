@@ -41,16 +41,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_status'])) {
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
             curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                "Content-Type: application/json",
-                "Authorization: Bearer " . ($setting['uber_client_secret'] ?? '')
-            ]);
-
+            ccurl_setopt($ch, CURLOPT_HTTPHEADER, [
+    "Content-Type: application/json",
+    "Authorization: Bearer " . $access_token
+]);
             $response = curl_exec($ch);
-            $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-
-            
+            $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);           
             curl_close($ch);
 
             // If Uber rejects the PIN, show an error and keep the order active
